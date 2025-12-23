@@ -5,14 +5,16 @@ on:
     branches: [main, master]
     paths:
       - 'AGENTS.md'
-      - '.claude/skills/**'
-      - 'scripts/validate_repo.py'
+      - '.claude/**'
+      - '.cursor/**'
+      - 'scripts/validate_*.py'
   pull_request:
     branches: [main, master]
     paths:
       - 'AGENTS.md'
-      - '.claude/skills/**'
-      - 'scripts/validate_repo.py'
+      - '.claude/**'
+      - '.cursor/**'
+      - 'scripts/validate_*.py'
   workflow_dispatch:
 
 jobs:
@@ -29,3 +31,6 @@ jobs:
 
       - name: Run repository validation
         run: python scripts/validate_repo.py --verbose
+
+      - name: Run agent system validation
+        run: python scripts/validate_agent_system.py --verbose

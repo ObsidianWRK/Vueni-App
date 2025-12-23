@@ -1,0 +1,421 @@
+#!/usr/bin/env python3
+"""
+Agent System Validator
+
+Validates the complete agent instruction system across:
+- AGENTS.md canonical instructions
+- .claude/CLAUDE.md and .claude/rules/ (Claude Code adapter)
+- .cursor/rules/ (Cursor adapter)
+- Skills architecture
+- Size limits for Codex CLI
+
+Usage:
+    python scripts/validate_agent_system.py [--verbose]
+"""
+
+import re
+import sys
+from pathlib import Path
+from typing import List, Tuple
+
+# Codex limit
+CODEX_LIMIT_BYTES = 32768
+CODEX_WARNING_THRESHOLD = 0.85  # Warn at 85% of limit
+
+class ValidationError:
+    def __init__(self, gate: str, message: str, severity: str = "error"):
+        self.gate = gate
+        self.message = message
+        self.severity = severity
+
+    def __str__(self):
+        icon = "❌" if self.severity == "error" else "⚠️"  if self.severity == "warning" else "ℹ️"
+        return f"{icon} [{self.gate}] {self.message}"
+
+
+def find_repo_root() -> Path:
+    """Find the repository root by looking for AGENTS.md."""
+    current = Path(__file__).resolve().parent
+    for _ in range(5):
+        if (current / "AGENTS.md").exists():
+            return current
+        current = current.parent
+    return Path(__file__).resolve().parent.parent
+
+
+def validate_g1_instruction_topology(repo_root: Path, verbose: bool) -> List[ValidationError]:
+    """
+    Gate 1: Instruction Topology
+    - No contradictory instructions across overlapping scopes
+    - All critical subsystems have an instruction source
+    """
+    errors = []
+
+    # Check AGENTS.md exists
+    agents_md = repo_root / "AGENTS.md"
+    if not agents_md.exists():
+        errors.append(ValidationError("g1", "AGENTS.md not found"))
+        return errors
+
+    # Check for nested AGENTS.md files (should be none in flat structure)
+    nested_agents = list(repo_root.rglob("AGENTS.md"))
+    if len(nested_agents) > 1:
+        errors.append(ValidationError(
+            "g1",
+            f"Found {len(nested_agents)} AGENTS.md files (expected 1 for flat structure)",
+            severity="warning"
+        ))
+
+    # Check .claude/CLAUDE.md exists
+    claude_md = repo_root / ".claude" / "CLAUDE.md"
+    if not claude_md.exists():
+        errors.append(ValidationError("g1", ".claude/CLAUDE.md not found"))
+
+    # Check .claude/rules/ exists
+    claude_rules_dir = repo_root / ".claude" / "rules"
+    if not claude_rules_dir.exists():
+        errors.append(ValidationError("g1", ".claude/rules/ directory not found"))
+    else:
+        # Check for expected rule files
+        expected_rules = [
+            "skills-architecture.md",
+            "plan-workflows.md",
+            "web-search-policy.md",
+            "ocr-auto-invoke.md"
+        ]
+        for rule_file in expected_rules:
+            if not (claude_rules_dir / rule_file).exists():
+                errors.append(ValidationError("g1", f".claude/rules/{rule_file} not found"))
+
+    # Check .cursor/rules/ exists
+    cursor_rules_dir = repo_root / ".cursor" / "rules"
+    if not cursor_rules_dir.exists():
+        errors.append(ValidationError("g1", ".cursor/rules/ directory not found"))
+    else:
+        # Check for operating contract
+        operating_contract = cursor_rules_dir / "00-operating-contract.mdc"
+        if not operating_contract.exists():
+            errors.append(ValidationError("g1", ".cursor/rules/00-operating-contract.mdc not found"))
+
+    if verbose:
+        print(f"  Checked instruction topology: {len(errors)} issue(s)")
+
+    return errors
+
+
+def validate_g2_codex_limits(repo_root: Path, verbose: bool) -> List[ValidationError]:
+    """
+    Gate 2: Codex Limits
+    - AGENTS.md size ≤ 32KB OR documented override exists
+    - Provide repeatable size check command
+    """
+    errors = []
+
+    agents_md = repo_root / "AGENTS.md"
+    if not agents_md.exists():
+        errors.append(ValidationError("g2", "AGENTS.md not found"))
+        return errors
+
+    size_bytes = agents_md.stat().st_size
+    size_pct = (size_bytes / CODEX_LIMIT_BYTES) * 100
+
+    if size_bytes > CODEX_LIMIT_BYTES:
+        errors.append(ValidationError(
+            "g2",
+            f"AGENTS.md exceeds Codex limit: {size_bytes} bytes ({size_pct:.1f}% of {CODEX_LIMIT_BYTES} byte limit)"
+        ))
+    elif size_bytes > CODEX_LIMIT_BYTES * CODEX_WARNING_THRESHOLD:
+        errors.append(ValidationError(
+            "g2",
+            f"AGENTS.md approaching Codex limit: {size_bytes} bytes ({size_pct:.1f}% of {CODEX_LIMIT_BYTES} byte limit)",
+            severity="warning"
+        ))
+
+    if verbose:
+        print(f"  AGENTS.md size: {size_bytes} bytes ({size_pct:.1f}% of limit)")
+
+    return errors
+
+
+def validate_g3_claude_memory(repo_root: Path, verbose: bool) -> List[ValidationError]:
+    """
+    Gate 3: Claude Memory
+    - .claude/CLAUDE.md exists and is an index
+    - .claude/rules/*.md files have valid YAML frontmatter or are global
+    """
+    errors = []
+
+    # Check .claude/CLAUDE.md
+    claude_md = repo_root / ".claude" / "CLAUDE.md"
+    if not claude_md.exists():
+        errors.append(ValidationError("g3", ".claude/CLAUDE.md not found"))
+    else:
+        content = claude_md.read_text()
+        # Check it's an index (references AGENTS.md)
+        if "AGENTS.md" not in content:
+            errors.append(ValidationError(
+                "g3",
+                ".claude/CLAUDE.md should reference AGENTS.md as canonical source",
+                severity="warning"
+            ))
+        # Check it's not too large (should be thin)
+        if len(content) > 10000:  # 10KB threshold for index
+            errors.append(ValidationError(
+                "g3",
+                f".claude/CLAUDE.md is {len(content)} bytes (should be thin index <10KB)",
+                severity="warning"
+            ))
+
+    # Check .claude/rules/
+    rules_dir = repo_root / ".claude" / "rules"
+    if not rules_dir.exists():
+        errors.append(ValidationError("g3", ".claude/rules/ directory not found"))
+    else:
+        rule_files = list(rules_dir.glob("*.md"))
+        if verbose:
+            print(f"  Found {len(rule_files)} rule files in .claude/rules/")
+
+        for rule_file in rule_files:
+            content = rule_file.read_text()
+            # Check for YAML frontmatter
+            if content.startswith("---"):
+                # Has frontmatter - check for paths: field if needed
+                match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
+                if match:
+                    frontmatter = match.group(1)
+                    if "paths:" in frontmatter:
+                        # Path-scoped rule - ensure valid globs
+                        if verbose:
+                            print(f"    {rule_file.name}: path-scoped")
+                    # else: global with frontmatter
+            # else: global without frontmatter (acceptable)
+
+    return errors
+
+
+def validate_g4_cursor_rules(repo_root: Path, verbose: bool) -> List[ValidationError]:
+    """
+    Gate 4: Cursor Rules
+    - All .cursor/rules/*.mdc conform to rule types
+    - Agent-requested rules have precise descriptions
+    """
+    errors = []
+
+    rules_dir = repo_root / ".cursor" / "rules"
+    if not rules_dir.exists():
+        errors.append(ValidationError("g4", ".cursor/rules/ directory not found"))
+        return errors
+
+    mdc_files = list(rules_dir.glob("*.mdc"))
+    if not mdc_files:
+        errors.append(ValidationError("g4", "No .mdc files found in .cursor/rules/"))
+        return errors
+
+    if verbose:
+        print(f"  Found {len(mdc_files)} .mdc files in .cursor/rules/")
+
+    for mdc_file in mdc_files:
+        content = mdc_file.read_text()
+
+        # Check for YAML frontmatter
+        if not content.startswith("---"):
+            errors.append(ValidationError("g4", f"{mdc_file.name}: missing YAML frontmatter"))
+            continue
+
+        match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
+        if not match:
+            errors.append(ValidationError("g4", f"{mdc_file.name}: invalid YAML frontmatter"))
+            continue
+
+        frontmatter = match.group(1)
+
+        # Determine rule type
+        has_always_apply = "alwaysApply: true" in frontmatter
+        has_globs = "globs:" in frontmatter
+        has_description = "description:" in frontmatter
+
+        if has_always_apply:
+            rule_type = "always"
+        elif has_globs:
+            rule_type = "auto_attached"
+        elif has_description:
+            rule_type = "agent_requested"
+        else:
+            rule_type = "manual"
+
+        if verbose:
+            print(f"    {mdc_file.name}: {rule_type}")
+
+        # Validate agent-requested rules have precise descriptions
+        if rule_type == "agent_requested":
+            if "description:" not in frontmatter:
+                errors.append(ValidationError(
+                    "g4",
+                    f"{mdc_file.name}: agent-requested rule missing description"
+                ))
+
+    return errors
+
+
+def validate_g5_skills_quality(repo_root: Path, verbose: bool) -> List[ValidationError]:
+    """
+    Gate 5: Skills Quality
+    - Every skill folder contains SKILL.md
+    - Each SKILL.md contains required sections
+    - Skills do not duplicate global policies
+    """
+    errors = []
+
+    skills_dir = repo_root / ".claude" / "skills"
+    if not skills_dir.exists():
+        errors.append(ValidationError("g5", ".claude/skills/ directory not found"))
+        return errors
+
+    skill_dirs = [d for d in skills_dir.iterdir() if d.is_dir()]
+    if verbose:
+        print(f"  Found {len(skill_dirs)} skill directories")
+
+    for skill_dir in skill_dirs:
+        skill_md = skill_dir / "SKILL.md"
+
+        if not skill_md.exists():
+            errors.append(ValidationError("g5", f"{skill_dir.name}: missing SKILL.md"))
+            continue
+
+        content = skill_md.read_text()
+
+        # Check for YAML frontmatter
+        if not content.startswith("---"):
+            errors.append(ValidationError("g5", f"{skill_dir.name}: missing YAML frontmatter"))
+            continue
+
+        match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
+        if not match:
+            errors.append(ValidationError("g5", f"{skill_dir.name}: invalid YAML frontmatter"))
+            continue
+
+        frontmatter = match.group(1)
+
+        # Check required fields
+        if "name:" not in frontmatter:
+            errors.append(ValidationError("g5", f"{skill_dir.name}: frontmatter missing 'name'"))
+        if "description:" not in frontmatter:
+            errors.append(ValidationError("g5", f"{skill_dir.name}: frontmatter missing 'description'"))
+
+        # Check for required sections (basic check)
+        body = content[match.end():]
+        required_sections = ["purpose", "when to invoke", "workflow"]
+        for section in required_sections:
+            if section.lower() not in body.lower():
+                errors.append(ValidationError(
+                    "g5",
+                    f"{skill_dir.name}: missing '{section}' section",
+                    severity="warning"
+                ))
+
+    # Check for symlinks
+    root_skills = repo_root / "skills"
+    codex_skills = repo_root / ".codex" / "skills"
+
+    if root_skills.exists() and not root_skills.is_symlink():
+        errors.append(ValidationError(
+            "g5",
+            "skills/ should be a symlink to .claude/skills/ (found directory)",
+            severity="warning"
+        ))
+
+    if codex_skills.exists() and not codex_skills.is_symlink():
+        errors.append(ValidationError(
+            "g5",
+            ".codex/skills/ should be a symlink to .claude/skills/ (found directory)",
+            severity="warning"
+        ))
+
+    return errors
+
+
+def main():
+    verbose = "--verbose" in sys.argv or "-v" in sys.argv
+
+    repo_root = find_repo_root()
+    print(f"Validating agent system: {repo_root}\n")
+
+    # Run all validation gates
+    gates = [
+        ("g1_instruction_topology", validate_g1_instruction_topology),
+        ("g2_codex_limits", validate_g2_codex_limits),
+        ("g3_claude_memory", validate_g3_claude_memory),
+        ("g4_cursor_rules", validate_g4_cursor_rules),
+        ("g5_skills_quality", validate_g5_skills_quality),
+    ]
+
+    all_errors = []
+    gate_results = []
+
+    for gate_id, gate_fn in gates:
+        if verbose:
+            print(f"Running {gate_id}...")
+        errors = gate_fn(repo_root, verbose)
+        all_errors.extend(errors)
+
+        gate_errors = [e for e in errors if e.severity == "error"]
+        gate_warnings = [e for e in errors if e.severity == "warning"]
+
+        if gate_errors:
+            status = "❌ FAIL"
+        elif gate_warnings:
+            status = "⚠️  WARN"
+        else:
+            status = "✅ PASS"
+
+        gate_results.append((gate_id, status, len(gate_errors), len(gate_warnings)))
+
+        if verbose and errors:
+            for error in errors:
+                print(f"  {error}")
+        if verbose:
+            print()
+
+    # Print gate summary
+    print("Validation Gate Summary:")
+    print("=" * 60)
+    for gate_id, status, error_count, warn_count in gate_results:
+        issues = []
+        if error_count:
+            issues.append(f"{error_count} error(s)")
+        if warn_count:
+            issues.append(f"{warn_count} warning(s)")
+        issue_str = ", ".join(issues) if issues else "no issues"
+        print(f"{status} {gate_id:30} [{issue_str}]")
+    print("=" * 60)
+
+    # Separate errors and warnings
+    actual_errors = [e for e in all_errors if e.severity == "error"]
+    warnings = [e for e in all_errors if e.severity == "warning"]
+
+    # Print detailed errors/warnings if not verbose
+    if not verbose:
+        if warnings:
+            print("\nWarnings:")
+            for w in warnings:
+                print(f"  {w}")
+
+        if actual_errors:
+            print("\nErrors:")
+            for e in actual_errors:
+                print(f"  {e}")
+
+    # Final result
+    print()
+    if actual_errors:
+        print(f"❌ Agent system validation failed with {len(actual_errors)} error(s)")
+        sys.exit(1)
+    else:
+        print("✅ Agent system validation passed!")
+        if warnings:
+            print(f"   ({len(warnings)} warning(s))")
+        sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()

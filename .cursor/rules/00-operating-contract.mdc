@@ -1,0 +1,137 @@
+---
+alwaysApply: true
+---
+
+# Vueni-App Operating Contract
+
+**Repository Type:** AI Agent Skills and Workflows
+**Instruction System:** Portable across Cursor, Claude Code, and Codex CLI
+
+## Core Directive
+
+**All agents operating in this repository MUST:**
+1. Read and follow `AGENTS.md` (canonical instruction registry)
+2. Check for applicable skills BEFORE any response
+3. Use structured planning for complex tasks
+4. Track completed work in `docs/WorkDone.md`
+
+## Canonical Instructions Location
+
+→ **Primary**: `/AGENTS.md` - Skill registry, skill checking requirements, plan mode
+→ **Claude Code**: `.claude/CLAUDE.md` + `.claude/rules/` - Domain-specific policies
+→ **Cursor**: `.cursor/rules/` (this directory) - Cursor-specific adapters
+→ **Skills**: `.claude/skills/` - Canonical skills library (22+ skills)
+
+## Mandatory Skill Checking Workflow
+
+**BEFORE ANY RESPONSE** (including clarifying questions):
+1. Check if ANY skill might apply (even 1% chance)
+2. Invoke skill if applicable: `openskills read <skill-name>`
+3. Announce skill usage: "I've read the [Skill Name] skill and I'm using it to [purpose]"
+4. Follow skill exactly
+
+**See**: `AGENTS.md` <skill_checking_requirement> section for red flags, violation examples, and enforcement
+
+## Plan Mode Workflow
+
+**When user requests a plan or task is complex (3+ steps):**
+1. **STEP 0 (MANDATORY)**: Check for skills first (using-skills, plan-mode)
+2. Invoke `plan-mode` skill
+3. Follow phases: Understand → Research → Structure → Output
+4. Output Markdown plan with: Goal, Context, Approach, Steps, Assumptions, Risks, Todos
+
+**See**: `AGENTS.md` <plan_mode_instruction>
+
+## Available Skills (Partial List)
+
+**Always check** `AGENTS.md` <available_skills> for complete list. Key skills:
+
+- `using-skills` - Mandatory workflow for finding and using skills
+- `plan-mode` - Structured planning workflow
+- `skill-creator` - Create new skills
+- `deep-research` - Comprehensive research with citations
+- `frontend-design` - Production-grade UI/UX design
+- `ocr` - Extract text from images/screenshots
+- `mcp-builder` - Build Model Context Protocol servers
+
+**Invoke skills via**: `openskills read <skill-name>`
+
+## Key Policies (Delegated to AGENTS.md)
+
+**Web Search**: Only inside `deep-research` skill workflow
+**OCR**: Auto-invoked for image files (png, jpg, pdf, etc.)
+**Plan Completion**: Automated via hooks (writes to `docs/WorkDone.md`, deletes plan file)
+**Skills Architecture**: Canonical location `.claude/skills/`, validated by `scripts/validate_repo.py`
+
+**See**: `.claude/rules/` for detailed policies (Claude Code only)
+
+## Validation
+
+Before committing, run:
+```bash
+python scripts/validate_repo.py --verbose
+```
+
+Validates:
+- Skills structure and frontmatter
+- AGENTS.md registry alignment
+- Plan completion workflow
+- No placeholder text
+- Hook configuration
+
+## Cursor Commands
+
+Custom slash commands available:
+- `/commit` - Generate conventional commit messages
+- `/pr` - Generate PR titles and descriptions
+- `/debug` - Debugging workflow
+- `/ocr` - OCR workflow for images
+- `/refactor` - Refactoring workflow
+
+**Location**: `.cursor/commands/`
+
+## Directory Structure Reference
+
+```
+/
+├── AGENTS.md                    # Canonical instructions (READ FIRST)
+├── .claude/
+│   ├── CLAUDE.md                # Claude Code index
+│   ├── rules/                   # Detailed policies (Claude Code)
+│   ├── hooks/                   # Execution hooks
+│   └── skills/                  # Canonical skills (22+ skills)
+├── .cursor/
+│   ├── rules/                   # This directory (Cursor adapters)
+│   └── commands/                # Slash commands
+├── .codex/
+│   └── skills/                  # Synced from .claude/skills/
+├── scripts/
+│   └── validate_repo.py         # Validation script
+└── docs/
+    ├── WorkDone.md              # Completed plan tracking
+    └── DISCOVERY_REPORT.md      # System architecture
+```
+
+## Enforcement
+
+Skill checking is enforced by:
+1. **AGENTS.md instruction** (highest priority)
+2. **Pre-task hooks** (`.claude/hooks/pre-task-skill-check.js`)
+3. **Validation scripts** (`scripts/validate_skill_checks.py`)
+4. **using-skills skill** (establishes mandatory workflow)
+
+## Non-Negotiables
+
+❌ **NEVER** skip skill checking workflow
+❌ **NEVER** start tasks without checking `AGENTS.md`
+❌ **NEVER** duplicate policies (reference canonical sources)
+❌ **NEVER** use web_search outside `deep-research` skill
+
+✅ **ALWAYS** check for skills before responding
+✅ **ALWAYS** follow `AGENTS.md` instructions
+✅ **ALWAYS** use plan-mode for complex tasks
+✅ **ALWAYS** track completed plans in `docs/WorkDone.md`
+
+---
+
+**Remember**: `AGENTS.md` is the single source of truth. Read it. Follow it. No exceptions.
