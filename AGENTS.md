@@ -140,12 +140,6 @@ Usage notes:
 </skill>
 
 <skill>
-<name>template</name>
-<description>Internal scaffold for creating new skills. Not intended for direct use. Use the skill-creator skill to initialize new skills from this template.</description>
-<location>project</location>
-</skill>
-
-<skill>
 <name>theme-factory</name>
 <description>Toolkit for styling artifacts with a theme. These artifacts can be slides, docs, reportings, HTML landing pages, etc. There are 10 pre-set themes with colors/fonts that you can apply to any artifact that has been creating, or can generate a new theme on-the-fly.</description>
 <location>project</location>

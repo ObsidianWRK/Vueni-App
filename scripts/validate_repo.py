@@ -162,12 +162,8 @@ def validate_repo(repo_root: Path, verbose: bool = False) -> list[ValidationErro
             if "description" not in frontmatter:
                 errors.append(ValidationError(skill_name, "SKILL.md frontmatter missing 'description'"))
 
-            if "license" not in frontmatter:
-                errors.append(ValidationError(skill_name, "SKILL.md frontmatter missing 'license'"))
-
-        # Check LICENSE.txt exists
-        if not license_txt.exists():
-            errors.append(ValidationError(skill_name, "Missing LICENSE.txt"))
+            # Note: 'license' field is optional per Agent Skills specification
+            # Only name and description are required
 
         # Check for placeholder text (only in non-internal skills)
         if not is_internal:

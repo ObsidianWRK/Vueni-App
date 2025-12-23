@@ -98,15 +98,13 @@ def check_selftest(skill_dir: Path) -> CheckResult:
     fm = read_frontmatter(skill_md)
     name = fm.get("name", "")
     description = fm.get("description", "")
-    license_val = fm.get("license", "")
 
     missing = []
     if name != skill_dir.name:
         missing.append(f"name mismatch (found '{name}')")
     if not description:
         missing.append("description missing")
-    if not license_val:
-        missing.append("license missing")
+    # license is optional per minimal frontmatter spec
 
     if missing:
         return CheckResult("fail", "; ".join(missing))
