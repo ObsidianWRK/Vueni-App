@@ -112,6 +112,7 @@ coverage/
 
 # Packaged skills
 *.skill
+*.zip
 
 # Environment variables
 .env
