@@ -1,0 +1,63 @@
+{
+  "hooks": {
+    "enabled": true,
+    "debug": false,
+    "timeout": 5000,
+    "PreToolUse": [
+      {
+        "matcher": "^(Write|Edit|MultiEdit|read_file|grep|codebase_search|run_terminal_cmd)$",
+        "hooks": [
+          {
+            "type": "script",
+            "script": ".claude/hooks/pre-task-skill-check.js",
+            "timeout": 3000,
+            "continueOnError": false
+          }
+        ]
+      },
+      {
+        "matcher": "^Task$",
+        "hooks": [
+          {
+            "type": "script",
+            "script": ".claude/hooks/pre-task-skill-check.js",
+            "timeout": 3000,
+            "continueOnError": false
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^todo_write$",
+        "hooks": [
+          {
+            "type": "script",
+            "script": ".claude/hooks/post-todo-completion-check.js",
+            "timeout": 5000,
+            "continueOnError": false,
+            "async": false
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "script",
+            "script": ".claude/hooks/pre-task-skill-check.js",
+            "timeout": 2000,
+            "continueOnError": true
+          },
+          {
+            "type": "script",
+            "script": ".claude/hooks/pre-session-plan-check.js",
+            "timeout": 3000,
+            "continueOnError": false
+          }
+        ]
+      }
+    ]
+  }
+}
