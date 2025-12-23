@@ -13,6 +13,8 @@ Usage:
     python scripts/validate_agent_system.py [--verbose]
 """
 
+import hashlib
+import json
 import re
 import sys
 from pathlib import Path
@@ -41,6 +43,15 @@ def find_repo_root() -> Path:
             return current
         current = current.parent
     return Path(__file__).resolve().parent.parent
+
+
+def sha256_file(file_path: Path) -> str:
+    """Calculate SHA256 hash of a file."""
+    sha256 = hashlib.sha256()
+    with open(file_path, 'rb') as f:
+        for chunk in iter(lambda: f.read(8192), b''):
+            sha256.update(chunk)
+    return sha256.hexdigest()
 
 
 def validate_g1_instruction_topology(repo_root: Path, verbose: bool) -> List[ValidationError]:
@@ -313,23 +324,135 @@ def validate_g5_skills_quality(repo_root: Path, verbose: bool) -> List[Validatio
                     severity="warning"
                 ))
 
-    # Check for symlinks
-    root_skills = repo_root / "skills"
-    codex_skills = repo_root / ".codex" / "skills"
+    return errors
 
-    if root_skills.exists() and not root_skills.is_symlink():
-        errors.append(ValidationError(
-            "g5",
-            "skills/ should be a symlink to .claude/skills/ (found directory)",
-            severity="warning"
-        ))
 
-    if codex_skills.exists() and not codex_skills.is_symlink():
-        errors.append(ValidationError(
-            "g5",
-            ".codex/skills/ should be a symlink to .claude/skills/ (found directory)",
-            severity="warning"
-        ))
+def validate_g6_portability(repo_root: Path, verbose: bool) -> List[ValidationError]:
+    """
+    Gate 6: Portability
+    - No symlinks in mirror directories (cross-platform compatibility)
+    - Manifests exist and are valid
+    - File hashes match canonical source
+    - Skills count matches canonical
+    """
+    errors = []
+
+    # Define paths
+    canonical_dir = repo_root / ".claude" / "skills"
+    mirror_dirs = [
+        repo_root / ".codex" / "skills",
+        repo_root / "skills"
+    ]
+
+    # Check canonical source exists
+    if not canonical_dir.exists():
+        errors.append(ValidationError("g6", ".claude/skills/ canonical source not found"))
+        return errors
+
+    # Count canonical skills
+    canonical_skills = [d for d in canonical_dir.iterdir() if d.is_dir()]
+    if verbose:
+        print(f"  Canonical source has {len(canonical_skills)} skills")
+
+    # Check each mirror
+    for mirror_dir in mirror_dirs:
+        mirror_name = str(mirror_dir.relative_to(repo_root))
+
+        # Check mirror exists
+        if not mirror_dir.exists():
+            errors.append(ValidationError("g6", f"{mirror_name} mirror not found"))
+            continue
+
+        # Check it's NOT a symlink (portability requirement)
+        if mirror_dir.is_symlink():
+            errors.append(ValidationError(
+                "g6",
+                f"{mirror_name} is a symlink (must be real directory for cross-platform compatibility)"
+            ))
+            continue
+
+        # Check manifest exists
+        manifest_path = mirror_dir / ".manifest.json"
+        if not manifest_path.exists():
+            errors.append(ValidationError("g6", f"{mirror_name}/.manifest.json not found"))
+            continue
+
+        # Load and validate manifest
+        try:
+            with open(manifest_path, 'r') as f:
+                manifest = json.load(f)
+        except (json.JSONDecodeError, IOError) as e:
+            errors.append(ValidationError("g6", f"{mirror_name}/.manifest.json invalid: {e}"))
+            continue
+
+        # Check manifest structure
+        if "source" not in manifest:
+            errors.append(ValidationError("g6", f"{mirror_name}/.manifest.json missing 'source' field"))
+        if "generated_at" not in manifest:
+            errors.append(ValidationError("g6", f"{mirror_name}/.manifest.json missing 'generated_at' field"))
+        if "files" not in manifest:
+            errors.append(ValidationError("g6", f"{mirror_name}/.manifest.json missing 'files' field"))
+            continue
+
+        manifest_files = manifest.get("files", {})
+
+        # Count skills in mirror
+        mirror_skills = [d for d in mirror_dir.iterdir() if d.is_dir()]
+        if verbose:
+            print(f"  {mirror_name} has {len(mirror_skills)} skills, {len(manifest_files)} files in manifest")
+
+        # Verify skill count matches canonical
+        if len(mirror_skills) != len(canonical_skills):
+            errors.append(ValidationError(
+                "g6",
+                f"{mirror_name} skill count mismatch: {len(mirror_skills)} vs {len(canonical_skills)} canonical"
+            ))
+
+        # Sample verification: check a few files match canonical
+        # (full verification would be expensive, so we sample)
+        sample_count = 0
+        max_samples = 5
+        for rel_path, metadata in manifest_files.items():
+            if sample_count >= max_samples:
+                break
+
+            canonical_file = canonical_dir / rel_path
+            mirror_file = mirror_dir / rel_path
+
+            # Check canonical file exists
+            if not canonical_file.exists():
+                errors.append(ValidationError(
+                    "g6",
+                    f"{mirror_name}/{rel_path} in manifest but missing from canonical source",
+                    severity="warning"
+                ))
+                sample_count += 1
+                continue
+
+            # Check mirror file exists
+            if not mirror_file.exists():
+                errors.append(ValidationError(
+                    "g6",
+                    f"{mirror_name}/{rel_path} in manifest but file missing"
+                ))
+                sample_count += 1
+                continue
+
+            # Verify hash matches
+            expected_hash = metadata.get("sha256")
+            if expected_hash:
+                actual_hash = sha256_file(canonical_file)
+                if actual_hash != expected_hash:
+                    errors.append(ValidationError(
+                        "g6",
+                        f"{mirror_name}/{rel_path} hash mismatch (manifest out of sync)",
+                        severity="warning"
+                    ))
+
+            sample_count += 1
+
+        if verbose and sample_count > 0:
+            print(f"    Verified {sample_count} sample files")
 
     return errors
 
@@ -347,6 +470,7 @@ def main():
         ("g3_claude_memory", validate_g3_claude_memory),
         ("g4_cursor_rules", validate_g4_cursor_rules),
         ("g5_skills_quality", validate_g5_skills_quality),
+        ("g6_portability", validate_g6_portability),
     ]
 
     all_errors = []

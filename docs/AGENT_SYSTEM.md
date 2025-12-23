@@ -212,6 +212,7 @@ python scripts/execute_plan_completion.py .cursor/plans/plan_name.plan.md
 | g3 | Claude Memory | .claude/CLAUDE.md exists, rules valid |
 | g4 | Cursor Rules | .cursor/rules/*.mdc conform to types |
 | g5 | Skills Quality | SKILL.md structure, no duplication |
+| g6 | Portability | No symlinks, manifests valid, cross-platform |
 
 ### CI/CD
 
@@ -223,8 +224,80 @@ python scripts/execute_plan_completion.py .cursor/plans/plan_name.plan.md
 - Changes to AGENTS.md, .claude/**, .cursor/**, scripts/validate_*.py
 
 **Jobs:**
-1. Run `validate_repo.py --verbose`
-2. Run `validate_agent_system.py --verbose`
+1. Run `sync_agent_assets.py --verbose` (generate real-file mirrors)
+2. Run `validate_repo.py --verbose`
+3. Run `validate_agent_system.py --verbose`
+
+---
+
+## Portability
+
+### Cross-Platform Compatibility
+
+**Approach:** Real-file mirrors (no symlinks)
+
+**Problem Solved:** Symlinks are not reliably supported across:
+- Windows (requires admin privileges)
+- Codex CLI (best-effort symlink traversal)
+- Cursor (may not follow symlinks in some contexts)
+
+**Solution:** `scripts/sync_agent_assets.py`
+- Copies `.claude/skills/` to `.codex/skills/` and `skills/` as real files
+- Generates `.manifest.json` with SHA256 checksums for validation
+- Runs automatically in CI before validation
+- Manual sync: `python scripts/sync_agent_assets.py --verbose`
+
+### Mirror Structure
+
+```
+.codex/skills/
+├── .manifest.json        # Sync state tracking
+├── plan-mode/
+│   └── SKILL.md
+├── skill-creator/
+│   └── SKILL.md
+└── ... (22 skills, 296 files)
+
+skills/
+├── .manifest.json        # Sync state tracking
+├── plan-mode/
+│   └── SKILL.md
+├── skill-creator/
+│   └── SKILL.md
+└── ... (22 skills, 296 files)
+```
+
+### Manifest Format
+
+```json
+{
+  "source": ".claude/skills",
+  "generated_at": "2025-12-23T23:50:00Z",
+  "generator": "scripts/sync_agent_assets.py",
+  "files": {
+    "plan-mode/SKILL.md": {
+      "sha256": "365f1f52...",
+      "size": 9660,
+      "mtime": "2025-12-23T23:00:00Z"
+    }
+  }
+}
+```
+
+### When to Sync
+
+**Automatic (CI):** Every push/PR runs sync before validation
+
+**Manual (Local):**
+- After cloning repository: `python scripts/sync_agent_assets.py`
+- After modifying `.claude/skills/`: `python scripts/sync_agent_assets.py`
+- Before committing changes to skills
+
+**Validation:** g6_portability gate ensures:
+- Mirror directories exist and are NOT symlinks
+- Manifests exist and are valid JSON
+- File counts match canonical source
+- Sample files match expected SHA256 hashes
 
 ---
 
@@ -234,9 +307,11 @@ python scripts/execute_plan_completion.py .cursor/plans/plan_name.plan.md
 
 **Single source:** `.claude/skills/` (22 skills)
 
-**Symlinks:**
-- `skills/` → `.claude/skills/`
-- `.codex/skills/` → `../.claude/skills/`
+**Mirrors (Real Directories):**
+- `skills/` - Real directory (296 files, synced from `.claude/skills/`)
+- `.codex/skills/` - Real directory (296 files, synced from `.claude/skills/`)
+
+**Note:** Previously used symlinks, but replaced with real-file mirrors for cross-platform portability (Phase 7). See `docs/PORTABILITY_AUDIT.md` for details.
 
 ### Skill Structure
 

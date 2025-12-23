@@ -29,6 +29,9 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Sync agent assets (generate real-file mirrors)
+        run: python scripts/sync_agent_assets.py --verbose
+
       - name: Run repository validation
         run: python scripts/validate_repo.py --verbose
 
