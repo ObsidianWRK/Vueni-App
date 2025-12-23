@@ -1,7 +1,6 @@
 ---
 name: expo-ios-designer
-description: "Design iOS-first UIs for Expo/React Native apps: layout, typography, safe areas, motion, haptics, and accessibility aligned with iOS conventions."
-license: Apache-2.0 (see LICENSE.txt)
+description: Design iOS-first UIs for Expo/React Native apps: layout, typography, safe areas, motion, haptics, and accessibility aligned with iOS conventions.
 ---
 
 # Expo iOS Designer Skill

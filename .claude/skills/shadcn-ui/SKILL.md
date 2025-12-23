@@ -1,7 +1,6 @@
 ---
 name: shadcn-ui
 description: Install and use shadcn/ui (Radix-based) components in React/Next.js/Vite projects with Tailwind, theming, and best-practice composition.
-license: Apache-2.0 (see LICENSE.txt)
 ---
 
 # shadcn/ui Skill

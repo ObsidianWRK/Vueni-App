@@ -1,12 +1,6 @@
 ---
 name: deep-research
 description: Deep research skill combining Perplexity-style iterative depth with Manus-style parallel breadth. Analyzes queries, executes multi-phase research, and produces comprehensive reports with citations, structured data, and visualizations.
-license: MIT
-compatibility: Designed for Cursor, Claude, and Codex
-metadata:
-  version: 1.0.0
-  author: Agent Skills
-allowed-tools: web_search read_file write grep list_dir codebase_search
 ---
 
 # Deep Research Skill
