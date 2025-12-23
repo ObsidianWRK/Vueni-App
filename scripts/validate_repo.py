@@ -182,6 +182,33 @@ def validate_repo(repo_root: Path, verbose: bool = False) -> list[ValidationErro
                 severity="warning"
             ))
 
+    # Check skill-check enforcement infrastructure exists
+    validate_skill_checks_script = repo_root / "scripts" / "validate_skill_checks.py"
+    if not validate_skill_checks_script.exists():
+        errors.append(ValidationError(
+            "skill-check-enforcement",
+            "Missing scripts/validate_skill_checks.py (skill-check validation script)",
+            severity="warning"
+        ))
+    
+    hooks_dir = repo_root / ".claude" / "hooks"
+    pre_task_hook = hooks_dir / "pre-task-skill-check.js"
+    if not pre_task_hook.exists():
+        errors.append(ValidationError(
+            "skill-check-enforcement",
+            "Missing .claude/hooks/pre-task-skill-check.js (pre-task skill-check hook)",
+            severity="warning"
+        ))
+    
+    hooks_config = repo_root / ".claude" / "hooks.json"
+    if not hooks_config.exists():
+        errors.append(ValidationError(
+            "skill-check-enforcement",
+            "Missing .claude/hooks.json (hooks configuration)",
+            severity="warning"
+        ))
+    
+    # Check plan completion validation
     try:
         try:
             from scripts.validate_plan_completion import validate_plan_completion

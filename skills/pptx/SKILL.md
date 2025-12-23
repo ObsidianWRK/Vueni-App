@@ -1,6 +1,6 @@
 ---
 name: pptx
-description: Presentation creation, editing, and analysis. When Claude needs to work with presentations (.pptx files) for: (1) Creating new presentations, (2) Modifying or editing content, (3) Working with layouts, (4) Adding comments or speaker notes, or any other presentation tasks
+description: Create, edit, and analyze presentations (.pptx files) by building new presentations, modifying content, working with layouts, and adding comments or speaker notes. Use this skill when working with PowerPoint presentations, creating slides, editing presentation content, or performing any other presentation tasks.
 ---
 
 # PPTX creation, editing, and analysis

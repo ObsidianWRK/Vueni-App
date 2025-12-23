@@ -1,6 +1,6 @@
 ---
 name: deep-research
-description: Deep research skill combining Perplexity-style iterative depth with Manus-style parallel breadth. Analyzes queries, executes multi-phase research, and produces comprehensive reports with citations, structured data, and visualizations.
+description: Conduct comprehensive research by analyzing queries, executing multi-phase searches, and producing detailed reports with citations, structured data, and visualizations. Use this skill when users request "deep research", "research this", "investigate", or need comprehensive analysis with citations. Combines Perplexity-style iterative depth with Manus-style parallel breadth for thorough coverage of complex topics.
 ---
 
 # Deep Research Skill

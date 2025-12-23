@@ -1,6 +1,6 @@
 ---
 name: plan-mode
-description: Standardized planning workflow for Cursor, Claude, and Codex. Invoke when user requests a plan, enters "plan mode", or needs structured thinking before implementation. Produces Markdown plans with actionable steps, assumptions, risks, and implementation todos with IDs and dependencies.
+description: Create structured plans using a standardized planning workflow for Cursor, Claude, and Codex. Use this skill when users request a plan, enter "plan mode", ask "how would you approach...", or need structured thinking before implementation. Produces Markdown plans with actionable steps, assumptions, risks, and implementation todos with IDs and dependencies.
 ---
 
 # Plan Mode Skill

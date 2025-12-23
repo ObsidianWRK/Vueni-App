@@ -444,6 +444,33 @@ def main():
         if is_valid:
             valid_count += 1
     
+    # Check skill-check enforcement infrastructure
+    repo_root = Path('.')
+    for _ in range(5):
+        if (repo_root / "AGENTS.md").exists():
+            break
+        repo_root = repo_root.parent
+    
+    validate_skill_checks_script = repo_root / "scripts" / "validate_skill_checks.py"
+    pre_task_hook = repo_root / ".claude" / "hooks" / "pre-task-skill-check.js"
+    hooks_config = repo_root / ".claude" / "hooks.json"
+    
+    enforcement_warnings = 0
+    if not validate_skill_checks_script.exists():
+        print_status("warn", "Skill-check validation script missing: scripts/validate_skill_checks.py")
+        enforcement_warnings += 1
+    if not pre_task_hook.exists():
+        print_status("warn", "Pre-task hook missing: .claude/hooks/pre-task-skill-check.js")
+        enforcement_warnings += 1
+    if not hooks_config.exists():
+        print_status("warn", "Hooks configuration missing: .claude/hooks.json")
+        enforcement_warnings += 1
+    
+    if enforcement_warnings == 0:
+        print_status("pass", "Skill-check enforcement infrastructure present")
+    
+    total_warnings += enforcement_warnings
+    
     # Final summary
     print("\n" + "=" * 50)
     print(f"{BOLD}Summary{RESET}")

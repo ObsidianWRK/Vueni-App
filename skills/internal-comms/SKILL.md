@@ -1,6 +1,6 @@
 ---
 name: internal-comms
-description: A set of resources to help me write all kinds of internal communications, using the formats that my company likes to use. Claude should use this skill whenever asked to write some sort of internal communications (status reports, leadership updates, 3P updates, company newsletters, FAQs, incident reports, project updates, etc.).
+description: Write and create internal communications using company-preferred formats and templates. Use this skill when asked to write internal communications such as status reports, leadership updates, 3P updates, company newsletters, FAQs, incident reports, project updates, or any other internal communication documents.
 ---
 
 ## When to use this skill

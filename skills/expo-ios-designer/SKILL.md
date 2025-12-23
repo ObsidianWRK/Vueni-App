@@ -1,6 +1,6 @@
 ---
 name: expo-ios-designer
-description: Design iOS-first UIs for Expo/React Native apps: layout, typography, safe areas, motion, haptics, and accessibility aligned with iOS conventions.
+description: Design and build iOS-first UIs for Expo/React Native apps with proper layout, typography, safe areas, motion, haptics, and accessibility aligned with iOS conventions. Use this skill when creating mobile interfaces, designing iOS apps, building React Native components, or implementing iOS design patterns.
 ---
 
 # Expo iOS Designer Skill

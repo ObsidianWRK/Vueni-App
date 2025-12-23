@@ -1,6 +1,6 @@
 ---
 name: ocr
-description: Extract accurate text and structured information from screenshots/images. Use when the user provides a screenshot/photo and asks to OCR, transcribe, extract tables or key/value fields, capture UI/error text, or pull specific details from an image. Prioritize fidelity; avoid hallucination; output verbatim text plus structured JSON.
+description: Extract, transcribe, and analyze text and structured information from screenshots, images, and PDFs. Use this skill when the user provides a screenshot, photo, or image and asks to OCR, transcribe, extract tables or key/value fields, capture UI/error text, or pull specific details from an image. Prioritize fidelity; avoid hallucination; output verbatim text plus structured JSON.
 ---
 
 # OCR

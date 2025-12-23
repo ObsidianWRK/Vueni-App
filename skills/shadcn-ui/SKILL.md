@@ -1,6 +1,6 @@
 ---
 name: shadcn-ui
-description: Install and use shadcn/ui (Radix-based) components in React/Next.js/Vite projects with Tailwind, theming, and best-practice composition.
+description: Install, configure, and use shadcn/ui (Radix-based) components in React/Next.js/Vite projects with Tailwind, theming, and best-practice composition. Use this skill when building React interfaces, adding UI components, setting up component libraries, or implementing design systems with shadcn/ui.
 ---
 
 # shadcn/ui Skill

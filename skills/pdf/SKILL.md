@@ -1,6 +1,6 @@
 ---
 name: pdf
-description: Comprehensive PDF manipulation toolkit for extracting text and tables, creating new PDFs, merging/splitting documents, and handling forms. When Claude needs to fill in a PDF form or programmatically process, generate, or analyze PDF documents at scale.
+description: Extract, create, and manipulate PDFs by processing text and tables, creating new PDFs, merging/splitting documents, and handling forms. Use this skill when filling in PDF forms, programmatically processing PDFs, generating documents, or analyzing PDF content at scale.
 ---
 
 # PDF Processing Guide
