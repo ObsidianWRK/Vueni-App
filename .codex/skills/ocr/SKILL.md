@@ -1,8 +1,6 @@
 ---
 name: ocr
 description: Extract accurate text and structured information from screenshots/images. Use when the user provides a screenshot/photo and asks to OCR, transcribe, extract tables or key/value fields, capture UI/error text, or pull specific details from an image. Prioritize fidelity; avoid hallucination; output verbatim text plus structured JSON.
-license: MIT
-compatibility: Designed for Cursor, Claude Code, and Codex
 ---
 
 # OCR

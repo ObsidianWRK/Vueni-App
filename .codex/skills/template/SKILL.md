@@ -1,7 +1,6 @@
 ---
 name: template
 description: Internal scaffold for creating new skills. Not intended for direct use. Use the skill-creator skill to initialize new skills from this template.
-license: Apache-2.0 (see LICENSE.txt)
 ---
 
 # Skill Template

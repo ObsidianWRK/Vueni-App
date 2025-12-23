@@ -1,12 +1,6 @@
 ---
 name: plan-mode
 description: Standardized planning workflow for Cursor, Claude, and Codex. Invoke when user requests a plan, enters "plan mode", or needs structured thinking before implementation. Produces Markdown plans with actionable steps, assumptions, risks, and implementation todos with IDs and dependencies.
-license: MIT
-compatibility: Designed for Cursor, Claude, and Codex
-metadata:
-  version: 1.0.0
-  author: Agent Skills
-allowed-tools: read_file codebase_search grep list_dir
 ---
 
 # Plan Mode Skill
@@ -41,7 +35,6 @@ Trigger this skill when:
 - Explore the codebase to understand existing patterns, conventions, and relevant code.
 - Identify dependencies, risks, and integration points.
 - Note any constraints from existing architecture.
-- If external sources are needed, invoke the `deep-research` skill and follow its workflow. Do not call external search tools directly from plan-mode.
 </research>
 
 ### Phase 3: Structure

@@ -1,12 +1,6 @@
 ---
 name: plan-mode
 description: Standardized planning workflow for Cursor, Claude, and Codex. Invoke when user requests a plan, enters "plan mode", or needs structured thinking before implementation. Produces Markdown plans with actionable steps, assumptions, risks, and implementation todos with IDs and dependencies.
-license: MIT
-compatibility: Designed for Cursor, Claude, and Codex
-metadata:
-  version: 1.0.0
-  author: Agent Skills
-allowed-tools: read_file codebase_search grep list_dir web_search
 ---
 
 # Plan Mode Skill

@@ -1,18 +1,12 @@
 ---
 name: deep-research
 description: Deep research skill combining Perplexity-style iterative depth with Manus-style parallel breadth. Analyzes queries, executes multi-phase research, and produces comprehensive reports with citations, structured data, and visualizations.
-license: MIT
-compatibility: Designed for Cursor, Claude, and Codex
-metadata:
-  version: 1.0.0
-  author: Agent Skills
-allowed-tools: web_search read_file write grep list_dir codebase_search
 ---
 
 # Deep Research Skill
 
 <purpose>
-Execute comprehensive research by intelligently selecting between deep iterative (Perplexity-style) and wide parallel (Manus-style) approaches based on query complexity, and serve as the only approved entry point for `web_search`. Produce rich Markdown reports with inline citations, structured JSON exports, and Mermaid visualizations.
+Execute comprehensive research by intelligently selecting between deep iterative (Perplexity-style) and wide parallel (Manus-style) approaches based on query complexity. Produce rich Markdown reports with inline citations, structured JSON exports, and Mermaid visualizations.
 </purpose>
 
 ## When to Invoke
@@ -22,7 +16,6 @@ Trigger this skill when:
 - Query requires multiple sources or perspectives
 - User needs comprehensive analysis with citations
 - Topic is complex, comparative, or multi-faceted
-- Any request requiring `web_search` must invoke this skill
 
 ## Research Workflow
 
@@ -95,7 +88,6 @@ Always include:
 
 <constraints>
 - Maximum 10 web searches per research session
-- Do not use `web_search` outside this skill
 - Summarize progressively to manage context window
 - Never fabricate citations—only cite sources from search results
 - Include "[Source: URL]" inline for every factual claim
