@@ -198,6 +198,18 @@ This ensures consistent, actionable plans across Cursor, Claude, and Codex.
 <plan_completion_workflow priority="high">
 When a plan has been completed (all todos marked as `status: completed`), agents MUST follow this workflow:
 
+CRITICAL: After marking the final todo as completed, you MUST verify the completion workflow ran.
+If automation fails or is uncertain, you MUST manually run:
+`python scripts/execute_plan_completion.py <plan_file>`
+Then run: `python scripts/validate_plan_completion.py`
+
+Enforcement Layers (all mandatory):
+1. Post-todo hook (blocking, fails on errors)
+2. Pre-session plan check (blocks on missing WorkDone entries)
+3. Repo validation (fails when workflow skipped)
+4. Explicit CRITICAL reminders in this section
+5. Manual fallback command (mandatory if automation fails)
+
 0. **Skill Check** (BEFORE writing completion summary)
    - Check for relevant skills using the skill-checking requirement above
    - If `using-skills` or other skills apply, invoke them first
@@ -205,7 +217,7 @@ When a plan has been completed (all todos marked as `status: completed`), agents
 
 1. **Completion Detection**
    - A plan is considered complete when ALL todos in the plan file's frontmatter have `status: completed`
-   - Check plan files in `.cursor/plans/` directory for completion status
+   - Check plan files in `.cursor/plans/` AND `~/.cursor/plans/` for completion status
    - Parse the YAML frontmatter to read todos array and verify all statuses
 
 2. **WorkDone.md Entry Format**
@@ -243,7 +255,7 @@ When a plan has been completed (all todos marked as `status: completed`), agents
 3. **Writing Completion Summary**
    - Read existing `docs/WorkDone.md` content (create file if it doesn't exist)
    - Append new entry to the end of the file
-   - Use atomic operation: read entire file → append new entry → write back
+   - Use atomic operation: read entire file -> append new entry -> write back
    - Include all completed todos with their IDs and descriptions
    - Add a brief summary of accomplishments
 
@@ -299,17 +311,22 @@ The completion workflow is **automated** to prevent agents from skipping it:
    - Detects when all todos in a plan are completed
    - Triggers the completion workflow automatically
 
-2. **Workflow Executor** (`scripts/execute_plan_completion.py`)
+2. **Pre-Session Plan Check** (`.claude/hooks/pre-session-plan-check.js`)
+   - Runs at session start
+   - Detects completed plans missing WorkDone entries
+   - Blocks the session with explicit remediation steps
+
+3. **Workflow Executor** (`scripts/execute_plan_completion.py`)
    - Executes the completion workflow programmatically
    - Writes WorkDone.md entry atomically
    - Deletes plan file after successful write
 
-3. **Validation** (`scripts/validate_plan_completion.py`)
+4. **Validation** (`scripts/validate_plan_completion.py`)
    - Validates that completed plans have WorkDone.md entries
    - Detects when workflow was skipped
    - Integrated into `validate_repo.py` for standard checks
 
-4. **Todo Sync** (`scripts/sync_plan_todos.py`)
+5. **Todo Sync** (`scripts/sync_plan_todos.py`)
    - Syncs todos from `todo_write` to plan file frontmatter
    - Ensures plan files have accurate todo state for detection
 
@@ -319,15 +336,9 @@ The completion workflow is **automated** to prevent agents from skipping it:
 - The executor writes to WorkDone.md and deletes the plan file
 - Validation scripts verify the workflow executed correctly
 
-**Manual Override:**
-If automation fails, agents can manually run:
+**Manual Override (Mandatory if automation fails):**
 ```bash
 python scripts/execute_plan_completion.py .cursor/plans/plan_name.plan.md
-```
-
-**Verification:**
-Run validation to check for skipped workflows:
-```bash
 python scripts/validate_plan_completion.py
 ```
 </plan_completion_workflow>
