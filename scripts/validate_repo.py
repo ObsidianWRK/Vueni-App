@@ -182,6 +182,22 @@ def validate_repo(repo_root: Path, verbose: bool = False) -> list[ValidationErro
                 severity="warning"
             ))
 
+    try:
+        try:
+            from scripts.validate_plan_completion import validate_plan_completion
+        except Exception:
+            from validate_plan_completion import validate_plan_completion
+
+        _, violations = validate_plan_completion(repo_root, verbose=False)
+        for violation in violations:
+            errors.append(ValidationError("plan_completion", violation, severity="error"))
+    except Exception as exc:
+        errors.append(ValidationError(
+            "plan_completion",
+            f"plan completion validation failed: {exc}",
+            severity="error"
+        ))
+
     return errors
 
 
