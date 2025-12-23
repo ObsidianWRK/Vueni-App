@@ -310,56 +310,20 @@ def validate_skill(skill_path: Path, codex_invoke_ready: bool = False) -> Tuple[
             print_status("fail", f"description: {err}")
             errors += 1
     
-    # Validate optional fields
-    # License (optional)
+    # Validate optional fields (per superpowers:writing-skills, only name + description are required)
+    # Warn about extra frontmatter fields beyond minimal standard
+    extra_fields = set(frontmatter.keys()) - {'name', 'description'}
+    if extra_fields:
+        print_status("warn", f"Extra frontmatter fields (minimal standard is name + description only): {', '.join(sorted(extra_fields))}")
+        warnings += 1
+
+    # License (optional, legacy)
     license_val = frontmatter.get('license')
     if license_val:
-        print_status("pass", f"license: '{license_val}'")
-    else:
-        if codex_invoke_ready:
-            print_status("fail", "license is required for invocation readiness")
-            errors += 1
-        else:
-            print_status("info", "license: not specified (optional)")
+        print_status("info", f"license: '{license_val}' (legacy field, not required)")
     
-    # Compatibility (optional)
-    compatibility = frontmatter.get('compatibility')
-    if compatibility is not None:
-        compat_valid, compat_warnings = validate_compatibility(compatibility)
-        if compat_valid:
-            print_status("pass", f"compatibility: '{compatibility}'")
-        else:
-            for warn in compat_warnings:
-                print_status("warn", warn)
-                warnings += 1
-    else:
-        print_status("info", "compatibility: not specified (optional)")
-    
-    # Metadata (optional)
-    metadata = frontmatter.get('metadata')
-    if metadata is not None:
-        meta_valid, meta_warnings = validate_metadata(metadata)
-        if meta_valid:
-            print_status("pass", f"metadata: {len(metadata)} field(s)")
-        else:
-            for warn in meta_warnings:
-                print_status("warn", warn)
-                warnings += 1
-    else:
-        print_status("info", "metadata: not specified (optional)")
-    
-    # Allowed-tools (optional)
-    allowed_tools = frontmatter.get('allowed-tools')
-    if allowed_tools is not None:
-        tools_valid, tools_warnings = validate_allowed_tools(allowed_tools)
-        if tools_valid:
-            print_status("pass", f"allowed-tools: '{allowed_tools}'")
-        else:
-            for warn in tools_warnings:
-                print_status("warn", warn)
-                warnings += 1
-    else:
-        print_status("info", "allowed-tools: not specified (optional)")
+    # Note: compatibility, metadata, and allowed-tools are now considered legacy fields
+    # Per superpowers:writing-skills, only name + description should be in frontmatter
     
     # Validate body content
     body_lines = body.strip().split('\n')
@@ -418,7 +382,7 @@ def main():
         print(f"       {sys.argv[0]} --codex   # Validate all skills in .codex/skills/")
         print(f"       {sys.argv[0]} --cursor  # Validate all skills in skills/")
         print(f"Options:")
-        print(f"       --codex-invoke-ready    # Treat name/description/license as required for Codex invocation readiness")
+        print(f"       --minimal-frontmatter   # Strict mode: warn about any fields beyond name + description (superpowers:writing-skills standard)")
         sys.exit(1)
     
     skills_to_validate = []
